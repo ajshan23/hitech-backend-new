@@ -173,7 +173,7 @@ export const getSingleJobCard = asyncHandler(
 
 export const SearchJobCard = asyncHandler(
   async (req: Request, res: Response) => {
-    const {
+    let {
       page,
       limit,
       warranty,
@@ -184,58 +184,58 @@ export const SearchJobCard = asyncHandler(
       billed,
     } = req.query;
 
-    // Parse pagination parameters
+    if (searchTerm && typeof searchTerm !== "string") {
+      searchTerm = String(searchTerm); // Ensure searchTerm is a string
+    }
+
+    const search = searchTerm ? searchTerm : "";
     const pageNo: number = parseInt(page as string) || 1;
     const limitOf: number = parseInt(limit as string) || 10;
 
-    // Validate pagination parameters
     if (isNaN(pageNo) || isNaN(limitOf) || pageNo < 1 || limitOf < 1) {
       throw new ApiError(400, "Invalid page or limit value");
     }
 
     const skip: number = (pageNo - 1) * limitOf;
 
-    // Build the search query
-    const query: any = {};
+    const query: any = {
+      $or: [
+        { customerName: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
+        { jobCardNumber: { $regex: search, $options: "i" } },
+        { DealerName: { $regex: search, $options: "i" } },
+        { Make: { $regex: search, $options: "i" } },
+        { SrNo: { $regex: search, $options: "i" } },
+      ],
+    };
 
-    // Add searchTerm filter (if provided)
-    if (searchTerm) {
-      query.$or = [
-        { customerName: { $regex: searchTerm, $options: "i" } }, // Case-insensitive
-        { phoneNumber: { $regex: searchTerm, $options: "i" } },
-        { jobCardNumber: { $regex: searchTerm, $options: "i" } },
-        { DealerName: { $regex: searchTerm, $options: "i" } },
-        { Make: { $regex: searchTerm, $options: "i" } },
-        { SrNo: { $regex: searchTerm, $options: "i" } },
-      ];
-
-      // Add numeric search if searchTerm is a number
-      if (!isNaN(Number(searchTerm))) {
-        const searchValue = Number(searchTerm);
-        query.$or.push({ HP: searchValue });
-        query.$or.push({ KVA: searchValue });
-        query.$or.push({ RPM: searchValue });
-      }
+    if (!isNaN(Number(search))) {
+      const searchValue = Number(search);
+      query.$or.push({ HP: searchValue });
+      query.$or.push({ KVA: searchValue });
+      query.$or.push({ RPM: searchValue });
     }
 
-    // Add filters for warranty, returned, pending, completed, billed
     if (warranty !== undefined) {
-      query.warranty = warranty === "true"; // Convert string 'true'/'false' to boolean
+      query.warranty = warranty === "true";
     }
+
     if (returned !== undefined) {
       query.jobCardStatus = "Returned";
     }
+
     if (pending !== undefined) {
       query.jobCardStatus = "Pending";
     }
+
     if (completed !== undefined) {
       query.jobCardStatus = "Completed";
     }
+
     if (billed !== undefined) {
       query.jobCardStatus = "Billed";
     }
 
-    // Fetch job cards with pagination and population
     const jobCards = await JobCard.find(query)
       .sort({ createdAt: -1 })
       .populate([
@@ -246,17 +246,14 @@ export const SearchJobCard = asyncHandler(
       .limit(limitOf)
       .lean();
 
-    // Process job cards (ensure images are not null)
     const processedJobCards = jobCards.map((jobCard) => ({
       ...jobCard,
       images: jobCard.images || null,
     }));
 
-    // Get total count of documents for pagination
     const countOfDocuments = await JobCard.countDocuments(query);
     const totalPages = Math.ceil(countOfDocuments / limitOf);
 
-    // Send response
     res.status(200).json(
       new ApiResponse(
         200,
@@ -266,7 +263,7 @@ export const SearchJobCard = asyncHandler(
           totalPages,
           currentPage: pageNo,
         },
-        "Job cards fetched successfully"
+        "Successfully fetched"
       )
     );
   }

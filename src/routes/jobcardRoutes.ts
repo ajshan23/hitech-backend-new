@@ -22,7 +22,7 @@ router.post("/:id/images", upload.array("images", 5), addImagesToJobCard);
 router.get("/:id", getSingleJobCard);
 
 // Search job cards with filters and pagination
-router.get("/search", SearchJobCard);
+router.get("/", SearchJobCard);
 
 router.put("/return", returnJobcard);
 
