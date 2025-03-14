@@ -196,13 +196,44 @@ export const SearchJobCard = asyncHandler(
     const skip: number = (pageNo - 1) * limitOf;
 
     // Build the search query
-    const query: any = buildSearchQuery(searchTerm as string, {
-      warranty: warranty as string,
-      returned: returned as string,
-      pending: pending as string,
-      completed: completed as string,
-      billed: billed as string,
-    });
+    const query: any = {};
+
+    // Add searchTerm filter (if provided)
+    if (searchTerm) {
+      query.$or = [
+        { customerName: { $regex: searchTerm, $options: "i" } }, // Case-insensitive
+        { phoneNumber: { $regex: searchTerm, $options: "i" } },
+        { jobCardNumber: { $regex: searchTerm, $options: "i" } },
+        { DealerName: { $regex: searchTerm, $options: "i" } },
+        { Make: { $regex: searchTerm, $options: "i" } },
+        { SrNo: { $regex: searchTerm, $options: "i" } },
+      ];
+
+      // Add numeric search if searchTerm is a number
+      if (!isNaN(Number(searchTerm))) {
+        const searchValue = Number(searchTerm);
+        query.$or.push({ HP: searchValue });
+        query.$or.push({ KVA: searchValue });
+        query.$or.push({ RPM: searchValue });
+      }
+    }
+
+    // Add filters for warranty, returned, pending, completed, billed
+    if (warranty !== undefined) {
+      query.warranty = warranty === "true"; // Convert string 'true'/'false' to boolean
+    }
+    if (returned !== undefined) {
+      query.jobCardStatus = "Returned";
+    }
+    if (pending !== undefined) {
+      query.jobCardStatus = "Pending";
+    }
+    if (completed !== undefined) {
+      query.jobCardStatus = "Completed";
+    }
+    if (billed !== undefined) {
+      query.jobCardStatus = "Billed";
+    }
 
     // Fetch job cards with pagination and population
     const jobCards = await JobCard.find(query)
