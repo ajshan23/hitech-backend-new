@@ -140,6 +140,37 @@ export const addImagesToJobCard = asyncHandler(
   }
 );
 
+export const getSingleJobCard = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // Validate job card ID
+    if (!id) {
+      throw new ApiError(400, "Job card ID is required");
+    }
+
+    // Find the job card by ID and populate related fields
+    const jobCard = await JobCard.findById(id)
+      .populate({
+        path: "images",
+        select: "image", // Only fetch the image URL
+      })
+      .populate({
+        path: "worker",
+        select: "workerName workerImage", // Only fetch worker name and image
+      });
+
+    if (!jobCard) {
+      throw new ApiError(404, "Job card not found");
+    }
+
+    // Send the job card data as a response
+    res
+      .status(200)
+      .json(new ApiResponse(200, jobCard, "Job card fetched successfully"));
+  }
+);
+
 export const SearchJobCard = asyncHandler(
   async (req: Request, res: Response) => {
     const {

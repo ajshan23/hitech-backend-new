@@ -7,6 +7,7 @@ import {
   billJobCard,
   workDoneJobcard,
   reports,
+  getSingleJobCard,
 } from "../controllers/JobCardController";
 import upload from "../helpers/MulterConfig"; // Multer middleware for file uploads
 
@@ -16,15 +17,12 @@ const router = Router();
 router.post("/", upload.array("images", 5), createJobCardWithImages);
 
 // Add images to an existing job card
-router.post(
-  "/:id/images",
-  upload.array("images", 5),
-  addImagesToJobCard
-);
+router.post("/:id/images", upload.array("images", 5), addImagesToJobCard);
+
+router.get("/:id", getSingleJobCard);
 
 // Search job cards with filters and pagination
 router.get("/search", SearchJobCard);
-
 
 router.put("/return", returnJobcard);
 
@@ -36,6 +34,5 @@ router.put("/bill", billJobCard);
 
 // Get job card status counts for reports
 router.get("/reports", reports);
-
 
 export default router;
