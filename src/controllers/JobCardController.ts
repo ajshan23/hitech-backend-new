@@ -24,7 +24,6 @@ export const createJobCardWithImages = asyncHandler(
             attachments = JSON.parse(req.body.attachments);
           } catch (error) {
             console.error("Error parsing attachments JSON:", error);
-            // Handle parsing error, e.g., set attachments to an empty array
             attachments = [];
           }
         } else {
@@ -37,25 +36,23 @@ export const createJobCardWithImages = asyncHandler(
       }
     }
 
+    // Convert numeric fields to numbers (if provided)
     const HP = req.body.HP ? parseInt(req.body.HP) : undefined;
     const KVA = req.body.KVA ? parseInt(req.body.KVA) : undefined;
     const RPM = req.body.RPM ? parseInt(req.body.RPM) : undefined;
 
-    const convertedBody = {
+    // Prepare the job card data
+    const jobCardData = {
       ...req.body,
       HP: isNaN(HP!) ? undefined : HP,
       KVA: isNaN(KVA!) ? undefined : KVA,
       RPM: isNaN(RPM!) ? undefined : RPM,
       warranty: req.body.warranty === "true",
       attachments: attachments,
+      Frame: req.body.Frame || undefined, // Ensure Frame is undefined if empty
     };
 
-    // Validate job card input
-    const { error, value } = validateJobCardInput(convertedBody);
-    if (error) throw new ApiError(400, error.details[0].message);
-
-    // ... (rest of the code remains the same)
-    // Generate job card number, create jobCard, handle file uploads, save jobCard, send response
+    // Generate job card number
     const counter = await Counter.findOneAndUpdate(
       { _id: "jobCardNumber" },
       { $inc: { sequence_value: 1 } },
@@ -64,12 +61,14 @@ export const createJobCardWithImages = asyncHandler(
     const currentYear = new Date().getFullYear().toString().slice(-2);
     const jobCardNumber = `${counter.sequence_value}/${currentYear}`;
 
+    // Create the job card
     const jobCard = new JobCard({
-      ...value,
+      ...jobCardData,
       jobCardNumber,
       jobCardStatus: "Pending",
     });
 
+    // Handle file uploads (if any)
     if (req.files && Array.isArray(req.files) && req.files.length > 0) {
       const uploadResult = await handleMultipleFileUploads(req, req.files);
       if (!uploadResult.success || !uploadResult.uploadData) {
@@ -89,14 +88,15 @@ export const createJobCardWithImages = asyncHandler(
       jobCard.images = imageIds;
     }
 
+    // Save the job card to the database
     await jobCard.save();
 
+    // Send success response
     res
       .status(201)
       .json(new ApiResponse(201, jobCard, "Job card created successfully"));
   }
 );
-
 export const addImagesToJobCard = asyncHandler(
   async (req: Request, res: Response) => {
     const { id } = req.params;
