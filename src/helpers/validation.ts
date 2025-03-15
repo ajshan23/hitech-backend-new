@@ -20,10 +20,7 @@ const jobCardSchema = Joi.object({
   RPM: Joi.number().optional(),
   Type: Joi.string().optional(),
   Frame: Joi.string().optional(),
-  SrNo: Joi.string().required().messages({
-    "any.required": "Serial number is required",
-    "string.empty": "Serial number cannot be empty",
-  }),
+  SrNo: Joi.string().optional(), // Made optional
   DealerName: Joi.string().optional(),
   DealerNumber: Joi.string().optional(),
   works: Joi.string().optional(),
