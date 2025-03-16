@@ -8,6 +8,7 @@ import {
   workDoneJobcard,
   reports,
   getSingleJobCard,
+  editJobCard,
 } from "../controllers/JobCardController";
 import upload from "../helpers/MulterConfig"; // Multer middleware for file uploads
 
@@ -20,6 +21,8 @@ router.post("/", upload.array("images", 5), createJobCardWithImages);
 router.post("/:id/images", upload.array("images", 5), addImagesToJobCard);
 
 router.get("/:id", getSingleJobCard);
+
+router.put("/:id", upload.array("images", 5), editJobCard);
 
 // Search job cards with filters and pagination
 router.get("/", SearchJobCard);

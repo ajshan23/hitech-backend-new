@@ -1,4 +1,4 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import path from "path";
 import { Upload } from "@aws-sdk/lib-storage";
 import sharp from "sharp";
@@ -126,5 +126,22 @@ export async function handleSingleFileUpload(
       success: false,
       message: "File upload failed",
     };
+  }
+}
+
+export async function deleteFileFromS3(key: string): Promise<void> {
+  try {
+    const deleteParams = {
+      Bucket: process.env.AWS_BUCKET_NAME!,
+      Key: key,
+    };
+
+    const command = new DeleteObjectCommand(deleteParams);
+    await s3.send(command);
+
+    console.log(`File deleted successfully: ${key}`);
+  } catch (err) {
+    console.error(`Error deleting file from S3: ${err}`);
+    throw new Error("Failed to delete file from S3");
   }
 }

@@ -4,7 +4,7 @@ import { ApiError } from "../utils/apiHandlerHelpers";
 import { ApiResponse } from "../utils/apiHandlerHelpers";
 import { JobCard, Counter } from "../models/jobCardModel";
 
-import { handleMultipleFileUploads } from "../utils/uploader";
+import { deleteFileFromS3, handleMultipleFileUploads } from "../utils/uploader";
 import { validateJobCardInput } from "../helpers/validation";
 import { JobCardImage } from "../models/jobCardImage";
 import { Types } from "mongoose";
@@ -383,5 +383,87 @@ export const reports = asyncHandler(async (req: Request, res: Response) => {
         finalCounts,
         "Job card status counts fetched successfully"
       )
+    );
+});
+
+export const editJobCard = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { invoiceNumber, removedImages, ...updatedData } = req.body;
+
+  // Check if job card exists
+  const jobCard = await JobCard.findById(id).populate("images");
+  if (!jobCard) {
+    throw new ApiError(404, "Job card not found");
+  }
+
+  // Handle invoice number and date
+  if (invoiceNumber && invoiceNumber !== jobCard.invoiceNumber) {
+    updatedData.invoiceNumber = invoiceNumber;
+    updatedData.invoiceDate = new Date(); // Update invoice date if invoice number changes
+  }
+
+  // Handle attachments (if provided)
+  if (req.body.attachments) {
+    updatedData.attachments = Array.isArray(req.body.attachments)
+      ? req.body.attachments
+      : req.body.attachments.split(",");
+  }
+
+  // Handle numeric fields
+  if (req.body.HP) updatedData.HP = parseInt(req.body.HP);
+  if (req.body.KVA) updatedData.KVA = parseInt(req.body.KVA);
+  if (req.body.RPM) updatedData.RPM = parseInt(req.body.RPM);
+
+  // Handle file uploads (if any)
+  if (req.files && Array.isArray(req.files)) {
+    const uploadResult = await handleMultipleFileUploads(req, req.files);
+    if (!uploadResult.success || !uploadResult.uploadData) {
+      throw new ApiError(400, "File upload failed");
+    }
+
+    // Save new images to the database
+    const newImageIds = [];
+    for (const file of uploadResult.uploadData) {
+      const image = await JobCardImage.create({
+        image: file.url,
+        key: file.key,
+        jobCardId: jobCard._id,
+      });
+      newImageIds.push(new Types.ObjectId(image._id));
+    }
+
+    // Append new images to the existing ones
+    updatedData.images = [
+      ...jobCard.images.map((img) => img._id),
+      ...newImageIds,
+    ];
+  }
+
+  // Delete removed images from S3 and the database
+  if (removedImages) {
+    const removedImageIds = JSON.parse(removedImages); // Array of image IDs to remove
+    for (const imageId of removedImageIds) {
+      const image = await JobCardImage.findById(imageId);
+      if (image) {
+        await deleteFileFromS3(image.key); // Delete from S3
+        await JobCardImage.findByIdAndDelete(imageId); // Delete from the database
+      }
+    }
+  }
+
+  // Update the job card
+  const updatedJobCard = await JobCard.findByIdAndUpdate(id, updatedData, {
+    new: true,
+  }).populate("images");
+
+  if (!updatedJobCard) {
+    throw new ApiError(500, "Failed to update job card");
+  }
+
+  // Send success response
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedJobCard, "Job card updated successfully")
     );
 });
