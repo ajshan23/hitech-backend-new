@@ -5,15 +5,17 @@ import {
   assignWorkerToComplaint,
   updateComplaintStatus,
   updatePaymentStatus,
+  searchOnSiteComplaints,
+  getOnSiteComplaintById,
 } from "../controllers/onSiteJobController";
 
 const router = Router();
 
 // Create OnSite complaint
-router.post("", createOnSiteComplaint);
+router.post("/", createOnSiteComplaint);
 
-// Edit OnSite complaint
-router.put("/:id", editOnSiteComplaint);
+// Search OnSite complaints
+router.get("/", searchOnSiteComplaints);
 
 // Assign worker to OnSite complaint
 router.put("/:id/assign-worker", assignWorkerToComplaint);
@@ -23,5 +25,11 @@ router.put("/:id/status", updateComplaintStatus);
 
 // Update payment status
 router.put("/:id/payment-status", updatePaymentStatus);
+
+// Get OnSite complaint by ID
+router.get("/:id", getOnSiteComplaintById);
+
+// Edit OnSite complaint
+router.put("/:id", editOnSiteComplaint);
 
 export default router;

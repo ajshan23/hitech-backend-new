@@ -25,7 +25,7 @@ app.use(cors());
 // app.use(limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(express.static("/var/www/kmcc-frontend/dist/"));
+app.use(express.static("/var/www/evee/hitech-template/build/"));
 app.use(morgan("dev")); // Logging
 app.use(helmet()); // Security
 app.use(compression({ threshold: 1024 }));
@@ -45,7 +45,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // Error-handling middleware
 app.use(errorHandler as ErrorRequestHandler);
 app.get("*", (req, res) => {
-  // res.sendFile("/var/www/kmcc-frontend/dist/index.html");
+  res.sendFile("/var/www/evee/hitech-template/build/index.html");
 });
 // Function to start the server
 

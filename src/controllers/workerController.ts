@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/apiHandlerHelpers";
 import {
   handleSingleFileUpload,
   handleMultipleFileUploads,
+  deleteFileFromS3,
 } from "../utils/uploader";
 import Worker, { IWorker } from "../models/workerModel";
 import mongoose from "mongoose";
@@ -98,27 +99,52 @@ export const getASpecificWorker = asyncHandler(
 
 // Edit Worker Details
 export const editAWorker = asyncHandler(async (req: Request, res: Response) => {
-  const { id, workerName, phoneNumber } = req.body;
+  const { workerId, workerName, phoneNumber } = req.body;
+  console.log(req.body);
 
-  // Validate worker ID
-  if (!id) {
-    throw new ApiError(400, "Worker ID is required");
+  // Validate required fields
+  if (!workerId?.trim() || !workerName?.trim() || !phoneNumber?.trim()) {
+    throw new ApiError(400, "All fields are required");
   }
 
-  // Find and update worker
-  const worker = await Worker.findById(id);
-  if (!worker) {
+  // Fetch the existing worker
+  const existingWorker = await Worker.findById(workerId);
+  if (!existingWorker) {
     throw new ApiError(404, "Worker not found");
   }
 
-  if (workerName) worker.workerName = workerName;
-  if (phoneNumber) worker.phoneNumber = phoneNumber;
+  // If a new file is provided, handle the file upload and delete the old file
+  let uploadResult;
+  if (req.file) {
+    // Delete the old image from S3
+    if (existingWorker.key) {
+      await deleteFileFromS3(existingWorker.key);
+    }
 
-  await worker.save();
+    // Upload the new image to S3
+    uploadResult = await handleSingleFileUpload(req, req.file);
+    if (!uploadResult.success || !uploadResult.uploadData) {
+      throw new ApiError(400, "File upload failed");
+    }
+  }
+
+  // Update the worker's details
+  const updatedWorker = await Worker.findByIdAndUpdate(
+    workerId,
+    {
+      workerName,
+      phoneNumber,
+      ...(uploadResult?.uploadData && {
+        workerImage: uploadResult.uploadData.url,
+        key: uploadResult.uploadData.key,
+      }),
+    },
+    { new: true } // Return the updated document
+  );
 
   res
     .status(200)
-    .json(new ApiResponse(200, worker, "Worker updated successfully"));
+    .json(new ApiResponse(200, updatedWorker, "Worker updated successfully"));
 });
 
 // Change Worker Status

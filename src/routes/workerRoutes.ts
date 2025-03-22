@@ -22,8 +22,7 @@ router.get("", workerList);
 // Get a Specific Worker
 router.get("/specific", getASpecificWorker);
 
-// Edit Worker Details
-router.put("/edit", editAWorker);
+router.put("/edit", upload.single("image"), editAWorker);
 
 // Change Worker Status
 router.put("/change-status", changeStatus);

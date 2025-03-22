@@ -1,156 +1,159 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface ICounter extends Document {
-    _id: string;
-    sequence_value: number;
+  _id: string;
+  sequence_value: number;
 }
 
 const counterSchema: Schema = new Schema<ICounter>({
-    _id: {
-        type: String,
-        required: true
-    },
-    sequence_value: {
-        type: Number,
-        default: 0
-    }
-})
+  _id: {
+    type: String,
+    required: true,
+  },
+  sequence_value: {
+    type: Number,
+    default: 0,
+  },
+});
 
 const Counter = mongoose.model<ICounter>("Counter", counterSchema);
 
 export { Counter };
 
-
-
-
-
-
 export interface IJobCard extends Document {
-    _id: string;
-    jobCardNumber: string;
-    jobCardStatus: string;
-    customerName: string;
-    customerAddress: string;
-    phoneNumber: string;
-    InDate?: Date;
-    OutDate?: Date;
-    Make: string;//brand name like maruthy
-    HP?: number;
-    KVA?: number;
-    RPM?: number;
-    Type?: string;
-    Frame: string;
-    SrNo: string;//serial number
-    DealerName?: string;
-    DealerNumber?: string;
-    warranty?: boolean;
-    works?: string;
-    spares?: string;
-    industrialworks?: string;
-    attachments: [string];
-    images: Types.ObjectId[];
-    worker: Types.ObjectId;
-    invoiceNumber: string;
-    invoiceDate: Date;
-    others?: string;
-    createdAt: Date;
-    updatedAt: Date;
+  _id: string;
+  jobCardNumber: string;
+  jobCardStatus: string;
+  customerName: string;
+  customerAddress: string;
+  phoneNumber: string[];
+  InDate?: Date;
+  OutDate?: Date;
+  Make: string; //brand name like maruthy
+  HP?: number;
+  KVA?: number;
+  RPM?: number;
+  Type?: string;
+  Frame: string;
+  SrNo: string; //serial number
+  DealerName?: string;
+  DealerNumber?: string;
+  warranty?: boolean;
+  works?: string;
+  spares?: string;
+  industrialworks?: string;
+  attachments: [string];
+  images: Types.ObjectId[];
+  worker: Types.ObjectId;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  others?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const jobCardSchema: Schema = new Schema<IJobCard>({
+const jobCardSchema: Schema = new Schema<IJobCard>(
+  {
     customerName: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     customerAddress: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     phoneNumber: {
-        type: String,
-        required: true
+      type: [String], // Array of strings
+      required: true,
+      validate: {
+        validator: function (value: string[]) {
+          return value.length > 0; // Ensure the array is not empty
+        },
+        message: "At least one phone number is required.",
+      },
     },
     jobCardNumber: {
-        type: String,
-        required: true
+      type: String,
+      required: true,
     },
     InDate: {
-        type: Date,
-        default: Date.now()
+      type: Date,
+      default: Date.now(),
     },
     OutDate: {
-        type: Date,
+      type: Date,
     },
     Make: {
-        type: String,
+      type: String,
     },
     HP: {
-        type: Number,
+      type: Number,
     },
     KVA: {
-        type: Number,
+      type: Number,
     },
     RPM: {
-        type: Number,
+      type: Number,
     },
     Type: {
-        type: String,
+      type: String,
     },
     Frame: {
-        type: String,
+      type: String,
     },
     SrNo: {
-        type: String,
+      type: String,
     },
     DealerName: {
-        type: String,
+      type: String,
     },
     DealerNumber: {
-        type: String,
+      type: String,
     },
     works: {
-        type: String,
+      type: String,
     },
     spares: {
-        type: String,
+      type: String,
     },
     industrialworks: {
-        type: String,
+      type: String,
     },
-    attachments: [{
+    attachments: [
+      {
         type: String,
-    }],
+      },
+    ],
     warranty: {
-        type: Boolean,
+      type: Boolean,
     },
     jobCardStatus: {
-        type: String,
-        enum: ["Created", "Pending", "Returned", "Completed", "Billed"],
-        required: true
+      type: String,
+      enum: ["Created", "Pending", "Returned", "Completed", "Billed"],
+      required: true,
     },
     images: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: "JobCardImage",
-        }
+      {
+        type: Schema.Types.ObjectId,
+        ref: "JobCardImage",
+      },
     ],
     worker: {
-        type: Schema.Types.ObjectId,
-        ref: "Worker"
+      type: Schema.Types.ObjectId,
+      ref: "Worker",
     },
     invoiceNumber: {
-        type: String,
+      type: String,
     },
     invoiceDate: {
-        type: Date
+      type: Date,
     },
     others: {
-        type: String
-    }
-
-
-}, { timestamps: true });
-
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
 
 const JobCard = mongoose.model<IJobCard>("JobCard", jobCardSchema);
 
