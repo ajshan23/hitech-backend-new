@@ -78,7 +78,7 @@ const jobCardSchema: Schema = new Schema<IJobCard>(
     },
     InDate: {
       type: Date,
-      default: Date.now(),
+      default: () => new Date(), // Let MongoDB store in UTC
     },
     OutDate: {
       type: Date,
